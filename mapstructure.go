@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // DecodeHookFunc is the callback function that can be used for
@@ -188,6 +189,7 @@ func (d *Decoder) decode(name string, data interface{}, val reflect.Value) error
 
 	var err error
 	dataKind := getKind(val)
+
 	switch dataKind {
 	case reflect.Bool:
 		err = d.decodeBool(name, data, val)
@@ -297,6 +299,12 @@ func (d *Decoder) decodeInt(name string, data interface{}, val reflect.Value) er
 		} else {
 			val.SetInt(0)
 		}
+	case dataKind == reflect.String && !d.config.WeaklyTypedInput:
+		dur, err := time.ParseDuration(dataVal.String())
+		if err != nil {
+			return fmt.Errorf("cannot parse '%s' as duration: %s", name, err)
+		}
+		val.Set(reflect.ValueOf(dur))
 	case dataKind == reflect.String && d.config.WeaklyTypedInput:
 		i, err := strconv.ParseInt(dataVal.String(), 0, val.Type().Bits())
 		if err == nil {
